@@ -73,6 +73,7 @@ handler = Thread(target=handle_requests_by_batch).start()
 
 def make_images(text_input, num_images):
     try:
+        print(1, text_input, num_images)
 
         text = tokenizer.tokenize([text_input], dalle.text_seq_len).cuda()
 
@@ -84,6 +85,7 @@ def make_images(text_input, num_images):
             outputs.append(output)
 
         outputs = torch.cat(outputs)
+        print(2, outputs)
 
         response = []
 
@@ -97,7 +99,8 @@ def make_images(text_input, num_images):
             img.save(buffered, format="JPEG")
             img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
             response.append(img_str)
-        print(response)
+
+        print(3, response)
 
         return response
 
