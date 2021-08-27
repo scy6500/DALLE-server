@@ -33,8 +33,7 @@ CHECK_INTERVAL = 0.1
 
 vae = VQGanVAE(None, None)
 
-load_obj = torch.load(
-    "./dalle.pt")  # model checkpoint : https://github.com/robvanvolt/DALLE-models/tree/main/models/taming_transformer
+load_obj = torch.load("./16L_64HD_8H_512I_128T_cc12m_cc3m_3E.pt")  # model checkpoint : https://github.com/robvanvolt/DALLE-models/tree/main/models/taming_transformer
 dalle_params, _, weights = load_obj.pop('hparams'), load_obj.pop('vae_params'), load_obj.pop('weights')
 dalle_params.pop('vae', None)  # cleanup later
 
