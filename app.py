@@ -1,6 +1,9 @@
 from flask import Flask, request, jsonify
 from tqdm import tqdm
 import numpy as np
+from queue import Queue, Empty
+from threading import Thread
+import time
 
 # torch
 
@@ -22,11 +25,16 @@ from io import BytesIO
 
 app = Flask(__name__)
 
+requests_queue = Queue()  # request queue.
+REQUEST_BATCH_SIZE = 4  # max request size.
+CHECK_INTERVAL = 0.1
+
 # load model
 
 vae = VQGanVAE(None, None)
 
-load_obj = torch.load("./dalle.pt") # model checkpoint : https://github.com/robvanvolt/DALLE-models/tree/main/models/taming_transformer
+load_obj = torch.load(
+    "./dalle.pt")  # model checkpoint : https://github.com/robvanvolt/DALLE-models/tree/main/models/taming_transformer
 dalle_params, _, weights = load_obj.pop('hparams'), load_obj.pop('vae_params'), load_obj.pop('weights')
 dalle_params.pop('vae', None)  # cleanup later
 
@@ -43,16 +51,28 @@ top_k = 0.9
 image_size = vae.image_size
 
 
-@app.route('/generate', methods=['POST'])
-def make_images():
-    try:
-        json_data = request.get_json()
-        text_input = json_data["text"]
-        num_images = json_data["num_images"]
+def handle_requests_by_batch():
+    while True:
+        request_batch = []
 
-    except Exception as e:
-        return jsonify({'Error': 'Invalid request'}), 500
+        while not (len(request_batch) >= REQUEST_BATCH_SIZE):
+            try:
+                request_batch.append(requests_queue.get(timeout=CHECK_INTERVAL))
+            except Empty:
+                continue
 
+            for requests in request_batch:
+                try:
+                    requests["output"] = make_images(requests['input'][0], requests['input'][1])
+
+                except Exception as e:
+                    requests["output"] = e
+
+
+handler = Thread(target=handle_requests_by_batch).start()
+
+
+def make_images(text_input, num_images):
     try:
 
         text = tokenizer.tokenize([text_input], dalle.text_seq_len).cuda()
@@ -78,12 +98,39 @@ def make_images():
             img.save(buffered, format="JPEG")
             img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
             response.append(img_str)
+        print(response)
 
-        return jsonify(response)
+        return response
 
     except Exception as e:
         print('Error occur in script generating!', e)
         return jsonify({'Error': e}), 500
+
+
+@app.route('/generate', methods=['POST'])
+def generate():
+    if requests_queue.qsize() > REQUEST_BATCH_SIZE:
+        return jsonify({'Error': 'Too Many Requests. Please try again later'}), 429
+
+    try:
+        args = []
+        json_data = request.get_json()
+        text_input = json_data["text"]
+        num_images = json_data["num_images"]
+
+        args.append(text_input)
+        args.append(num_images)
+
+    except Exception as e:
+        return jsonify({'Error': 'Invalid request'}), 500
+
+    req = {'input': args}
+    requests_queue.put(req)
+
+    while 'output' not in req:
+        time.sleep(CHECK_INTERVAL)
+
+    return jsonify(req['output'])
 
 
 @app.route('/healthz', methods=["GET"])
