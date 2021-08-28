@@ -2,9 +2,8 @@ FROM yeop2/dalle-server:1
 
 RUN \
     apt-get update && \
-    apt-get install -y \
-        gcc \
-        g++ \
+    apt-get install -y gcc &&\
+    apt-get install -y g++
 
 COPY ./requirements.txt ./requirements.txt
 
