@@ -1,0 +1,3 @@
+FROM pytorch/pytorch:1.9.0-cuda10.2-cudnn7-runtime
+
+COPY 16L_64HD_8H_512I_128T_cc12m_cc3m_3E.pt .

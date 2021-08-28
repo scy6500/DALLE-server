@@ -73,8 +73,6 @@ handler = Thread(target=handle_requests_by_batch).start()
 
 def make_images(text_input, num_images):
     try:
-        print(1, text_input, num_images)
-
         text = tokenizer.tokenize([text_input], dalle.text_seq_len).cuda()
 
         text = repeat(text, '() n -> b n', b=num_images)
@@ -85,7 +83,6 @@ def make_images(text_input, num_images):
             outputs.append(output)
 
         outputs = torch.cat(outputs)
-        print(2, outputs)
 
         response = []
 
@@ -99,8 +96,6 @@ def make_images(text_input, num_images):
             img.save(buffered, format="JPEG")
             img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
             response.append(img_str)
-
-        print(3, response)
 
         return response
 
@@ -119,6 +114,9 @@ def generate():
         json_data = request.get_json()
         text_input = json_data["text"]
         num_images = json_data["num_images"]
+
+        if num_images > 10:
+            return jsonify({'Error': 'Too many images requested. Request no more than 10'}), 500
 
         args.append(text_input)
         args.append(num_images)
