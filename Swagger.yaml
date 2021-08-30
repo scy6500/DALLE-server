@@ -1,0 +1,49 @@
+openapi: 3.0.1
+
+info:
+  title: DALLE-pytorch
+  version: 1.0.0
+  contact:
+    name: Changyeop
+  description: |
+    Generate Images from Text
+    ---
+          How to use:
+          * Fill the text and num_images.
+          * The maximum number of num_images is 10
+    ---
+servers:
+  - url: https://main-dalle-server-scy6500.endpoint.ainize.ai/
+
+paths:
+  /generate:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  description: "Text for the image you want to create"
+                num_images:
+                  type: integer
+                  description: "Number of images you want"
+              required:
+                - text
+                - num_images
+      responses: # Set response
+        '200':
+          description: "Successful Response"
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: "Bad Request Error"
+        '429':
+          description: "Too many requests"
+        '500':
+          description: "Server-side Error"
