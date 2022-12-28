@@ -5,3 +5,5 @@ dalle-pytorch==0.14.3
 tqdm
 deepspeed==0.4.2
 triton==0.4.2
+werkzeug==2.0.3
+itsdangerous==2.0.1
